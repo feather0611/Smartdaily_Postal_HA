@@ -1,8 +1,11 @@
 import voluptuous as vol
+import logging
 from homeassistant import config_entries
 from homeassistant.core import callback
 import requests
 import aiohttp
+
+_LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "smartdaily_postal_ha"
 KingnetAuthValue = ""
@@ -28,16 +31,13 @@ class MyParcelTrackerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 requests.get, url, headers
             )
             if response.status_code == 200:
-                print("Success!\nResult:\n")
-                print(response.text)
-                print("\n------Beautify------\n")
                 # 解析JSON數據
                 data = response.json()
-
                 self.KingnetAuthValue = "CommunityUser " + data["Data"]["token"]
-                print(KingnetAuthValue)
+                _LOGGER.debug("Token updated successfully") 
+                
             else:
-                print("請求失敗，狀態碼:", response.status_code)
+                _LOGGER.error("Token request failed, status code: %s", response.status_code)
             # 尝试使用DeviceID获取KingnetAuth令牌和社区列表
             # 这里需要添加逻辑来调用API
             # ...
@@ -86,25 +86,20 @@ class MyParcelTrackerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "KingnetAuth": self.KingnetAuthValue,
             "Accept": "application/json, text/plain, */*"
         }
-        communities = []  # 初始化空列表用于存储社区信息
+        communities = []
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 "https://api.smartdaily.com.tw/api/Community/GetUserCommunityList",
                 headers=headers,
             ) as response:
-                print("-----------")
-                print(headers)
                 if response.status == 200:
-                    data = await response.json()  # 使用await等待异步操作完成
+                    data = await response.json()
                     for com in data["Data"]:
-                        # 将每个社区的信息添加到列表中
                         communities.append(
                             {"id": com["id"], "community": com["community"]}
                         )
                 else:
-                    print("请求失败，状态码:", response.status)
-                    text = await response.text()  # 使用await获取响应文本
-                    print(text)
-                    # 可以考虑抛出异常或进行其他错误处理
+                    text = await response.text()
+                    _LOGGER.error("Community list request failed, status code: %s, response: %s", response.status, text)
 
         return communities
