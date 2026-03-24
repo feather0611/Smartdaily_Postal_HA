@@ -1,12 +1,12 @@
 """Sensor platform for the package tracker component."""
 
 import asyncio
+import logging
 from datetime import datetime, timedelta
 import re
 import aiohttp
 import requests
 import pytz
-from homeassistant.core import _LOGGER
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.const import CONF_API_KEY
 from homeassistant.helpers.entity import Entity
@@ -17,6 +17,7 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 
+_LOGGER = logging.getLogger(__name__)
 DOMAIN = "smartdaily_postal_ha"
 SCAN_INTERVAL = timedelta(minutes=5)
 MIN_TIME_BETWEEN_UPDATES = timedelta(hours=12)
